@@ -20,6 +20,7 @@ Execute the following command in the root folder of the Simulator project, conta
 ```shell
 docker build -t idsc-iot-simulator .
 ```
+Note: Creating the simulator image is mandatory before the following steps. Creating the docker image is the only action required for the simulator, so you don't need to follow the steps in the readme of the simulator, as long as you don't want to do local development. 
 ---
 
 ### 2. Starting the Test Environment
@@ -42,7 +43,7 @@ Check that all containers are running:
 docker compose -p idsc2025 ps
 ```
 
-To stop and remove all containers, networks, and volumes:
+To stop all containers:
 
 ```shell
 docker compose -p idsc2025 down
