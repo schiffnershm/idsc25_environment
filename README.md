@@ -2,10 +2,23 @@
 
 ## Getting Started
 
+To follow along the examples of the workshop you need the test environment running.
+
 ### 1. Prerequisites
 
+#### Install Docker
 - [Docker](https://www.docker.com/products/docker-desktop) 
 
+#### Build Simulator Docker Image
+
+A. Clone the Simulator project
+- [Simulator](https://github.com/schiffnershm/idsc25_simulator)
+
+B. Create a docker image of the Simulator.
+
+```shell
+docker build -t idsc-iot-simulator .
+```
 ---
 
 ### 2. Starting the Test Environment
