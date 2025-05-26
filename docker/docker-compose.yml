@@ -1,0 +1,100 @@
+version: "2.2"
+services:
+  jobmanager:
+    image: flink:2.0.0-scala_2.12
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    volumes:
+      - ./dependencies:/opt/flink/lib/deps
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager        
+
+  taskmanager:
+    image: flink:2.0.0-scala_2.12
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    volumes:
+      - ./dependencies:/opt/flink/lib/deps
+    scale: 2
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2        
+  sql-client:
+    image: flink:2.0.0-scala_2.12
+    command: bin/sql-client.sh
+    depends_on:
+      - jobmanager
+    volumes:
+      - ./dependencies:/opt/flink/lib/deps
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        rest.address: jobmanager
+
+  redpanda:
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda-0:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda-0:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda-0:33145
+      - --advertise-rpc-addr redpanda-0:33145
+      - --mode dev-container
+      - --smp 1
+      - --default-log-level=info
+    image: docker.redpanda.com/redpandadata/redpanda:v25.1.1
+    container_name: redpanda-0
+    volumes:
+      - ./volumes/redpanda:/var/lib/redpanda/data
+    ports:
+      - 18081:18081
+      - 18082:18082
+      - 19092:19092
+      - 19644:9644
+  
+  console:
+    container_name: redpanda-console
+    image: docker.redpanda.com/redpandadata/console:v3.0.0
+    entrypoint: /bin/sh
+    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:9092"]
+        schemaRegistry:
+          enabled: true
+          urls: ["http://redpanda:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+    ports:
+      - 8082:8080
+    depends_on:
+      - redpanda
+  
+  simulator:
+    image: idsc-iot-simulator:latest
+    container_name: idsc-iot-simulator
+    environment:
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092
+    ports:
+      - 8085:8085
+    depends_on:
+      - redpanda
+
+
+networks:
+  default:
+    name: idsc_network
